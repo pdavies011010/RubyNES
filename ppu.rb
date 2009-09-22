@@ -78,7 +78,7 @@ class PPU
         
         if (scanline_cycle < 8)
           if (not image_mask_flag_set?)
-            # Draw left 8 pixels of screen
+            # Draw left 8 pixels of screen...
           end
         
         else

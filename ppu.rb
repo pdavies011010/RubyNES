@@ -1,4 +1,5 @@
 require "constants"
+require "ppu_helper"
 
 # Note, Debugger must be available as a global constant 'DEBUG'
 
@@ -11,6 +12,7 @@ class PPU
   attr_accessor :frame_complete
   
   include Constants
+  include PPUHelper
   
   public
   def initialize(mmc)
@@ -19,15 +21,15 @@ class PPU
     @mmc = mmc
     
     @control_reg_1 = 0
-    @control_reg_2 = 0
+    @control_reg_2 = 0x18
     @status = 0 # @TODO: Correct init value? 
     @sprite_mem_addr = 0
     @vertical_scroll_reg = 0 #@TODO: Correct init value?
     @horizontal_scroll_reg = 0 #@TODO: Correct init value?
     @ppu_mem_addr = 0
     
-    # Buffer of 240 scanlines, 341 pixels per line (palette entries)
-    @screen_buffer = Array.new(240, Array.new(341, 0))
+    # Buffer of 241 scanlines (1 is a dummy with nothing drawn), 341 pixels per line (palette entries)
+    @screen_buffer = Array.new(241, Array.new(341, 0))
     
     @elapsed_cycles = 0
     @scanline = 0
@@ -47,6 +49,9 @@ class PPU
   def pre_frame
     # Fill the screen with the background color
     fill_screen_with_background_color
+
+    # Clear Sprite #0 hit flag
+    set_hit_flag(false)
   end
   
   def post_frame
@@ -69,25 +74,56 @@ class PPU
     (1..cycles).each { |cycle|
       @scanline = (cycle + @elapsed_cycles) / SCANLINE_CYCLES  # What scanline are we on?
       scanline_cycle = (cycle + @elapsed_cycles) % SCANLINE_CYCLES  # What cycle within the scanline is this?
+      tile_pixel = scanline_cycle % 8
     
       if @scanline < 20
         # Do nothing for first 20 scanlines
       elsif @scanline == 20
         # Scanline 20 has some unique properties, first of all pull down the VINT flag
         set_vblank_flag(false) if (vblank_flag_set?)
-        
-        if (scanline_cycle < 8)
-          if (not image_mask_flag_set?)
-            # Draw left 8 pixels of screen...
-          end
-        
-        else
-        
-        
+
+        if (tile_pixel == 0)
+          # Read Name Table byte, Attribute Table byte and 2 Pattern Table bytes
+          @tile_index = get_tile_index(@scanline, scanline_cycle)
+          @name_table_address = get_name_table_address
+          @pattern_table_index = @mmc.read_ppu_mem(@name_table_address + @tile_index) # From Name Table
+          @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, @scanline))
+          @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, @scanline))
+          @attribute_table_index = get_attribute_table_index(@tile_index)
+          @attribute_table_byte = @mmc.read_ppu_mem(@name_table_address + NAME_TABLE_SIZE + @attribute_table_index)
         end
+        
+        # Nothing rendered on this scanline
         
       elsif @scanline < 261
         # Ordinary rendering for scanline 21 thru 260
+        if (tile_pixel == 0)
+          # Read Name Table byte, Attribute Table byte and 2 Pattern Table bytes
+          @tile_index = get_tile_index(@scanline, scanline_cycle)
+          @name_table_address = get_name_table_address
+          @pattern_table_index = @mmc.read_ppu_mem(@name_table_address + @tile_index) # From Name Table
+          @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, @scanline))
+          @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, @scanline))
+          @attribute_table_index = get_attribute_table_index(@tile_index)
+          @attribute_table_byte = @mmc.read_ppu_mem(@name_table_address + NAME_TABLE_SIZE + @attribute_table_index)
+          @attribute_table_square = get_attribute_table_square(@tile_index)
+        end
+
+        palette_index = 0
+        palette_index |= ((@pattern_table_byte1 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE1_BIT_SHIFT[tile_pixel])
+        palette_index |= ((@pattern_table_byte2 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE2_BIT_SHIFT[tile_pixel])
+        palette_index |= ((@attribute_table_byte & ATTRIBUTE_TABLE_BIT_MASK[@attribute_table_square]) >> ATTRIBUTE_TABLE_BIT_SHIFT[@attribute_table_square])
+
+        if screen_enable_flag_set?
+          if (scanline_cycle < 8)
+            if (not image_mask_flag_set?)
+              # Draw left 8 pixels of screen...
+              @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_cpu_mem(IMAGE_PALETTE_LO + palette_index)
+            end
+          else
+            @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_cpu_mem(IMAGE_PALETTE_LO + palette_index)
+          end
+        end
         
       elsif @scanline == 261
         # Again, do nothing
@@ -109,7 +145,7 @@ class PPU
   end
   
   # PPU Control register 1 Flags
-  def name_table_address?
+  def get_name_table_address
     result = 0
     
     name_table = @control_reg_1 & PPU_CTRL_1_NAME_TABLE_MASK
@@ -128,17 +164,17 @@ class PPU
     return result
   end
   
-  def sprite_pattern_table_address?
+  def get_sprite_pattern_table_address
     result = (sprite_pattern_table_address_flag_set?) ? 0x1000 : 0x0000
     return result
   end
   
-   def screen_pattern_table_address_flag_set?
+  def screen_pattern_table_address_flag_set?
     result = ((@control_reg_1 & PPU_CTRL_1_SCREEN_PATTERN_TABLE_ADDRESS) != 0) ? true : false
     return result
   end
   
-  def screen_pattern_table_address?
+  def get_screen_pattern_table_address
     result = (screen_pattern_table_address_flag_set?) ? 0x1000 : 0x0000
     return result
   end

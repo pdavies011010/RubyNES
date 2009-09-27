@@ -279,7 +279,7 @@ class MMC
       result = @sprite_palette[address - SPRITE_PALETTE_LO]
     end
     
-    return result
+    return result.to_i
   end
   
   def write_ppu_mem(address, value)

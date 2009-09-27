@@ -1,4 +1,3 @@
-gem "fxruby"
 require "fox16"
 require "nes"
 require "debugger"
@@ -132,13 +131,15 @@ class Main
         
     # Fill in onscreen buffer from PPU buffer
     ppu.screen_buffer.each_index { |scanline_index|
-      scanline = ppu.screen_buffer[scanline_index]
-      scanline.each_index { |pixel_index|
-        pixel = COLORS[scanline[pixel_index]]
-        # Pixel is the RGB (24-bit) color value for this pixel
-        # Now do something with it!
-        @screen_buffer[scanline_index][pixel_index] = FXRGB((pixel & 0xFF0000) >> 16, (pixel & 0xFF00) >> 8, (pixel & 0xFF))
-      }
+      if (scanline_index != 1) # Scanline 1 in the ppu is a dummy scanline (nothing drawn)
+        scanline = ppu.screen_buffer[scanline_index]
+        scanline.each_index { |pixel_index|
+          pixel = COLORS[scanline[pixel_index]]
+          # Pixel is the RGB (24-bit) color value for this pixel
+          # Now do something with it!
+          @screen_buffer[scanline_index - 1][pixel_index] = FXRGB((pixel & 0xFF0000) >> 16, (pixel & 0xFF00) >> 8, (pixel & 0xFF))
+        }
+      end
     }
   end
 end

@@ -28,8 +28,11 @@ class PPU
     @horizontal_scroll_reg = 0 #@TODO: Correct init value?
     @ppu_mem_addr = 0
     
-    # Buffer of 241 scanlines (1 is a dummy with nothing drawn), 341 pixels per line (palette entries)
-    @screen_buffer = Array.new(241, Array.new(341, 0))
+    # Buffer of 241 scanlines (1 is a dummy with nothing drawn), 256 pixels per line (palette entries)
+    @screen_buffer = Array.new(241, nil)
+    @screen_buffer.each_index {|index|
+      @screen_buffer[index] = Array.new(256, 0)
+    }
     
     @elapsed_cycles = 0
     @scanline = 0

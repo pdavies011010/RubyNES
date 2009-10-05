@@ -3,6 +3,7 @@ class ROMFile
   attr_reader :prg_page_count, :chr_page_count, :mapper
   attr_reader :rom_control_1, :rom_control_2
   attr_reader :prg_rom_pages, :chr_rom_pages
+  attr_reader :mirroring
   
   include Constants
   
@@ -13,6 +14,7 @@ class ROMFile
     @prg_page_count = 0
     @chr_page_count = 0
     @mapper = 0
+    @mirroring = 0
     @rom_control_1 = 0
     @rom_control_2 = 0
     
@@ -38,15 +40,22 @@ class ROMFile
       @rom_control_1 = io.readchar
       @rom_control_2 = io.readchar
       @mapper = (@rom_control_1 >> 4) | @rom_control_2
+      @mirroring |= (@rom_control_1 & 0x08) >> 2
+      @mirroring = @rom_control_1 & 0x01 if @mirroring == 0
       
       io.read(8) # Read in 8 remaining header bytes (unused at the moment)
       
       DEBUG.debug_print "File Type: " + filetype.to_s + "\n"
-      DEBUG.debug_print  "PRG-ROM Pages: " + @prg_page_count.to_s + "\n"
-      DEBUG.debug_print  "CHR-ROM Pages: " + @chr_page_count.to_s + "\n"
-      DEBUG.debug_print  "ROM Control Byte #1: " + @rom_control_1.to_s + "\n"
-      DEBUG.debug_print  "ROM Control Byte #2: " + @rom_control_2.to_s + "\n"
-      DEBUG.debug_print  "Mapper: " + @mapper.to_s + "\n"
+      DEBUG.debug_print "PRG-ROM Pages: " + @prg_page_count.to_s + "\n"
+      DEBUG.debug_print "CHR-ROM Pages: " + @chr_page_count.to_s + "\n"
+      DEBUG.debug_print "ROM Control Byte #1: " + @rom_control_1.to_s + "\n"
+      DEBUG.debug_print "ROM Control Byte #2: " + @rom_control_2.to_s + "\n"
+      DEBUG.debug_print "Mapper: " + @mapper.to_s + "\n"
+      if @mirroring == 2
+        DEBUG.debug_print "Mirroring: Four Screen\n"
+      else
+        DEBUG.debug_print "Mirroring: #{@mirroring == 0 ? 'Horizontal' : 'Vertical'}\n"
+      end
       
       # Load PRG-ROM and CHR-Pages into object variables
       @prg_rom_pages = Array.new(@prg_page_count)

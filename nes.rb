@@ -49,7 +49,19 @@ class NES
     
     # Load up ROM
     @rom_file = ROMFile.new(@rom_file_path)
+
+    @ppu.name_table_mirroring = @rom_file.mirroring
     
+    if @ppu.name_table_mirroring == 0
+      # Horizontal Mirroring
+      @mmc.name_table_1 = @mmc.name_table_0
+      @mmc.name_table_3 = @mmc.name_table_2
+    elsif @ppu.name_table_mirroring == 1
+      # Vertical Mirroring
+      @mmc.name_table_2 = @mmc.name_table_0
+      @mmc.name_table_3 = @mmc.name_table_1
+    end
+
     # Get PRG / CHR rom pages from ROMFile object into NES Memory map
     # Note, this depends on the mapper in use ... 
     # @TODO: For now we will assume Mapper #0 !!!. In the future we will need to

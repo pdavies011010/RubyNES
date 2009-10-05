@@ -32,6 +32,7 @@ class CPU
     @breakpoints = []
     @step = false
     @log_cpu_state = false
+    @debug_read = false
     
     # Add debug commands
     DEBUG.debug_addcommand "go", Proc.new {|param| @step = false}
@@ -116,21 +117,32 @@ class CPU
     cycle_offset = 0
     
     address = get_instruction_address(operation, addressing_mode)
-    data = get_instruction_data(operation, addressing_mode)
     
     # Handle debugging stuff
     if (@step or @breakpoints[@pc])
       # Write out CPU state to screen or log
+      @debug_read = true
+      debug_data = get_instruction_data(operation, addressing_mode)
+
       DEBUG.debug_print "Breakpoint Hit.\n" if @breakpoints[@pc]
-      DEBUG.debug_execcommand "getcpustate", "#{address},#{data}"
+      DEBUG.debug_execcommand "getcpustate", "#{address},#{debug_data}"
       DEBUG.debug_getcommands
     end
     
     # Perform logging if enabled
-    DEBUG.debug_execcommand "logcpustate", "#{address},#{data}" if (@log_cpu_state)
+    if (@log_cpu_state)
+      @debug_read = true
+      debug_data = get_instruction_data(operation, addressing_mode)
+      DEBUG.debug_execcommand "logcpustate", "#{address},#{debug_data}"
+    end
+
+    # Disable debug reading (reads will affect registers, etc.)
+    @debug_read = false
     
     case operation
       when Operation::ADC   #ADC
+      data = get_instruction_data(operation, addressing_mode)
+      
       temp = data + @a + (carry_flag_set? ? 1 : 0)
       calc_zero_flag(temp)
       
@@ -161,6 +173,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::AND  #AND
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = (data & @a)
       calc_zero_flag(temp)
       calc_sign_flag(temp)
@@ -170,6 +184,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::ASL  #ASL
+      data = get_instruction_data(operation, addressing_mode)
+
       set_carry_flag((data & 0x80) != 0)
       data <<= 1
       data &= 0xFF # Reduce to 1-byte data
@@ -205,6 +221,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::BIT  #BIT
+      data = get_instruction_data(operation, addressing_mode)
+
       calc_sign_flag(data)
       set_overflow_flag((data & 0x40) != 0)
       calc_zero_flag(data & @a)
@@ -280,6 +298,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::CMP  #CMP
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = @a - data
       set_carry_flag(temp < 0x100)
       calc_sign_flag(temp)
@@ -289,6 +309,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::CPX  #CPX
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = @x - data
       set_carry_flag(temp < 0x100)
       calc_sign_flag(temp)
@@ -296,6 +318,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::CPY  #CPY
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = @y - data
       set_carry_flag(temp < 0x100)
       calc_sign_flag(temp)
@@ -303,6 +327,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::DEC  #DEC
+      data = get_instruction_data(operation, addressing_mode)
+      
       data = (data - 1) & 0xFF
       calc_sign_flag(data)
       calc_zero_flag(data)
@@ -322,6 +348,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::EOR  #EOR
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = (data ^ @a)
       calc_zero_flag(temp)
       calc_sign_flag(temp)
@@ -331,6 +359,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::INC  #INC
+      data = get_instruction_data(operation, addressing_mode)
+      
       data = (data + 1) & 0xFF
       calc_sign_flag(data)
       calc_zero_flag(data)
@@ -360,6 +390,8 @@ class CPU
       @pc = address
       
       when Operation::LDA  #LDA
+      data = get_instruction_data(operation, addressing_mode)
+
       calc_sign_flag(data)
       calc_zero_flag(data)
       @a = data
@@ -368,6 +400,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::LDX  #LDX
+      data = get_instruction_data(operation, addressing_mode)
+
       calc_sign_flag(data)
       calc_zero_flag(data)
       @x = data
@@ -376,6 +410,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::LDY  #LDY
+      data = get_instruction_data(operation, addressing_mode)
+
       calc_sign_flag(data)
       calc_zero_flag(data)
       @y = data
@@ -384,6 +420,8 @@ class CPU
       cycle_offset = 1 if @page_boundary_crossed
       
       when Operation::LSR  #LSR
+      data = get_instruction_data(operation, addressing_mode)
+
       set_carry_flag((data & 0x01) != 0)
       data >>= 1
       data &= 0xFF # Reduce to 1-byte data
@@ -400,6 +438,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::ORA  #ORA
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = (data | @a)
       calc_zero_flag(temp)
       calc_sign_flag(temp)
@@ -428,6 +468,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::ROL  #ROL
+      data = get_instruction_data(operation, addressing_mode)
+
       carry = (data & 0x80) != 0 ? true : false
       data <<= 1
       data &= 0xFF # Reduce to 1-byte data
@@ -445,6 +487,8 @@ class CPU
       @pc += BYTE_COUNTS[operation][addressing_mode]
       
       when Operation::ROR  #ROR
+      data = get_instruction_data(operation, addressing_mode)
+
       carry = (data & 0x01) != 0 ? true : false
       data >>= 1
       data &= 0xFF # Reduce to 1-byte data
@@ -474,6 +518,8 @@ class CPU
       @pc = data
       
       when Operation::SBC  #SBC
+      data = get_instruction_data(operation, addressing_mode)
+
       temp = @a - data - (carry_flag_set? ? 1 : 0)
       calc_zero_flag(temp)
       calc_sign_flag(temp)
@@ -769,7 +815,12 @@ class CPU
   end
   
   def get_immediate_value
-    return @mmc.read_cpu_mem(get_immediate_address)
+    if @debug_read
+      result = @mmc.read_cpu_mem_safe(get_immediate_address)
+    else
+      result = @mmc.read_cpu_mem(get_immediate_address)
+    end
+    return result
   end
   
   def get_zero_page_address(xindexed,yindexed)
@@ -785,7 +836,12 @@ class CPU
   end
   
   def get_zero_page_value(xindexed,yindexed)
-    return @mmc.read_cpu_mem(get_zero_page_address(xindexed,yindexed))
+    if @debug_read
+      result = @mmc.read_cpu_mem_safe(get_zero_page_address(xindexed,yindexed))
+    else
+      result = @mmc.read_cpu_mem(get_zero_page_address(xindexed,yindexed))
+    end
+    return result
   end
   
   def get_absolute_address(xindexed,yindexed)
@@ -804,7 +860,12 @@ class CPU
   end
   
   def get_absolute_value(xindexed,yindexed)
-    return @mmc.read_cpu_mem(get_absolute_address(xindexed,yindexed))
+    if @debug_read
+      result = @mmc.read_cpu_mem_safe(get_absolute_address(xindexed,yindexed))
+    else
+      result = @mmc.read_cpu_mem(get_absolute_address(xindexed,yindexed))
+    end
+    return result
   end
   
   def get_indirect_address
@@ -823,7 +884,12 @@ class CPU
   end
   
   def get_preindexed_indirect_value
-    return @mmc.read_cpu_mem(get_preindexed_indirect_address)
+    if @debug_read
+      result = @mmc.read_cpu_mem_safe(get_preindexed_indirect_address)
+    else
+      result = @mmc.read_cpu_mem(get_preindexed_indirect_address)
+    end
+    return result
   end
   
   def get_postindexed_indirect_address
@@ -837,7 +903,12 @@ class CPU
   end
   
   def get_postindexed_indirect_value
-    return @mmc.read_cpu_mem(get_postindexed_indirect_address)
+    if @debug_read
+      result = @mmc.read_cpu_mem_safe(get_postindexed_indirect_address)
+    else
+      result = @mmc.read_cpu_mem(get_postindexed_indirect_address)
+    end
+    return result
   end
   
   def get_relative_address(op_offset)

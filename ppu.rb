@@ -5,6 +5,7 @@ require "ppu_helper"
 
 class PPU
   attr_accessor :mmc
+  attr_accessor :name_table_mirroring
   attr_accessor :control_reg_1, :control_reg_2, :status, :sprite_mem_addr
   attr_accessor :vertical_scroll_reg, :horizontal_scroll_reg, :ppu_mem_addr
   attr_accessor :screen_buffer
@@ -24,6 +25,7 @@ class PPU
     @control_reg_2 = 0x18
     @status = 0 # @TODO: Correct init value? 
     @sprite_mem_addr = 0
+    @name_table_mirroring = 0
     @vertical_scroll_reg = 0 #@TODO: Correct init value?
     @horizontal_scroll_reg = 0 #@TODO: Correct init value?
     @ppu_mem_addr = 0
@@ -63,7 +65,9 @@ class PPU
     
     DEBUG.debug_print "VBLANK Hit.\n"
     DEBUG.debug_log "VBLANK Hit.\n" if @log_ppu_state 
-    
+
+    #DEBUG.debug_getcommands
+
     @mmc.cpu.nmi if vblank_enable_flag_set? # Force CPU Non-maskable Interrupt
     
     @frame_complete = true

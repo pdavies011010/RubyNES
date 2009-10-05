@@ -137,9 +137,10 @@ class MMC
           @ppu.status &= (~PPU_STAT_VBLANK) # Clear VBLANK flag on read
         when PPU_SPRITE_MEM_DATA_PORT
           result = @sprite_mem[@ppu.sprite_mem_addr]
-          @ppu.sprite_mem_addr+=1 
+          @ppu.sprite_mem_addr+=1
         when PPU_MEM_DATA_PORT
           result = read_ppu_mem(@ppu.ppu_mem_addr)
+
           if (@ppu.vertical_rw_flag_set?)
             @ppu.ppu_mem_addr+=32
           else
@@ -160,6 +161,43 @@ class MMC
       result = @cartridge_bank_high[address - CARTRIDGE_ROM_HIGH_BANK_LO]
     end
     
+    return result
+  end
+
+  def read_cpu_mem_safe(address)
+    # This will read from CPU mem without performing any updates to anything (registers specifically)
+    result = 0
+
+    if (address >= IO_LO and address <= IO_HI)
+      # Read from IO ports
+      # Handle port mirroring
+      if (address <= PPU_PORT_HI)
+        # PPU Ports
+        port_mirror = (address - PPU_PORT_LO) / PPU_PORT_SIZE
+        true_address = address - (PPU_PORT_SIZE * port_mirror)
+      else
+        # Other Ports (APU mostly)
+        port_mirror = (address - OTHER_PORT_LO) / OTHER_PORT_SIZE
+        true_address = address - (OTHER_PORT_SIZE * port_mirror)
+      end
+
+      case true_address
+        when PPU_CONTROL_REG_1_PORT
+          result = @ppu.control_reg_1
+        when PPU_CONTROL_REG_2_PORT
+          result = @ppu.control_reg_2
+        when PPU_STATUS_REG_PORT
+          result = @ppu.status
+        when PPU_SPRITE_MEM_DATA_PORT
+          result = @sprite_mem[@ppu.sprite_mem_addr]
+        when PPU_MEM_DATA_PORT
+          result = read_ppu_mem(@ppu.ppu_mem_addr)
+       end
+
+    else
+      result = read_cpu_mem(address)
+    end
+
     return result
   end
   
@@ -207,11 +245,13 @@ class MMC
         
         when PPU_MEM_ADDRESS_PORT
           if not @ppu_mem_address_reg_switch
-            # Set low 8 bits of PPU Memory address register
-            @ppu.ppu_mem_addr = value
-          else
+            @ppu.ppu_mem_addr = 0  # Reset the PPU memory address register
+
             # Set high 6 bits of PPU Memory address register
             @ppu.ppu_mem_addr |= ((value & 0x3F) << 8)
+          else
+            # Set low 8 bits of PPU Memory address register
+            @ppu.ppu_mem_addr |= value
           end
           
           # Toggle switch
@@ -219,6 +259,7 @@ class MMC
           
         when PPU_MEM_DATA_PORT
           write_ppu_mem(@ppu.ppu_mem_addr, value)
+          DEBUG.debug_print "\nWriting #{DEBUG.num2hex(value)} to PPU address #{DEBUG.num2hex(@ppu.ppu_mem_addr)}"
           if (@ppu.vertical_rw_flag_set?)
             @ppu.ppu_mem_addr+=32
           else

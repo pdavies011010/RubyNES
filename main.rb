@@ -6,6 +6,11 @@ require "debugger"
 require "palette"
 require "constants"
 
+include_class "javax.swing.JMenuBar"
+include_class "javax.swing.JMenu"
+include_class "javax.swing.JMenuItem"
+include_class "javax.swing.JCheckBoxMenuItem"
+
 module Processing
   SKETCH_PATH = "./"
 end
@@ -19,11 +24,28 @@ class Main < Processing::App
   
   include Palette
   include Constants
+  
 
   def setup
     rom_file = ARGV[0]
     
     size 256, 241, P2D
+    
+    # Set up the menu bar
+    @menu_bar = JMenuBar.new
+    @frame.setJMenuBar(@menu_bar)
+    
+    @file_menu = JMenu.new("File")
+    @load_item = JMenuItem.new("Load ROM"); @file_menu.add(@load_item)
+    @power_on_item = JMenuItem.new("Power On"); @file_menu.add(@power_on_item)
+    @exit_item = JMenuItem.new("Exit"); @file_menu.add(@exit_item)
+    @menu_bar.add(@file_menu)
+    
+    @options_menu = JMenu.new("Options")
+    @show_pattern_tables_item = JMenuItem.new("Show Pattern Tables"); @options_menu.add(@show_pattern_tables_item)
+    @debug_item = JCheckBoxMenuItem.new("Debug?"); @options_menu.add(@debug_item)
+    @menu_bar.add(@options_menu)
+    
     
     # Now initialize the actual NES emulator
     @nes = NES.new()

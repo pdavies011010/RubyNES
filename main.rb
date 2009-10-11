@@ -51,7 +51,7 @@ class Main < Processing::App
     @nes = NES.new()
     
     @nes.load_rom rom_file if rom_file != nil and not rom_file.empty?
-    @title = "Ruby NES (#{rom_file})"
+    @frame.setTitle "Ruby NES (#{rom_file})"
     
     # 1/30 of a second, NTSC refresh rate.
     frameRate(30)
@@ -84,3 +84,4 @@ class Main < Processing::App
   end
 
 end
+

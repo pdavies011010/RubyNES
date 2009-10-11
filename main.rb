@@ -10,6 +10,10 @@ module Processing
   SKETCH_PATH = "./"
 end
 
+# Initialize Debugger as a global constant 'DEBUG'. Turn Debugging off by default.
+DEBUGGING=false 
+DEBUG = Debugger.new(DEBUGGING)
+
 class Main < Processing::App
   attr_accessor :nes
   
@@ -17,18 +21,44 @@ class Main < Processing::App
   include Constants
 
   def setup
-    x2 = ARGV[0]
-    y2 = ARGV[1]
+    rom_file = ARGV[0]
     
-    @title = "Ruby NES"
-    size 280, 280, P2D
-    background 255, 0, 0  # Red
-    stroke 0, 0, 255 # Blue
-    line 10, 10, 270, 270
+    size 256, 241, P2D
+    
+    # Now initialize the actual NES emulator
+    @nes = NES.new()
+    
+    @nes.load_rom rom_file if rom_file != nil and not rom_file.empty?
+    @title = "Ruby NES (#{rom_file})"
+    
+    # 1/30 of a second, NTSC refresh rate.
+    frameRate(30)
+    
+    @nes.power_on
+    
   end
   
   def draw
+    @nes.run_one_frame
     
+    repaint
+  end
+  
+  def repaint
+    ppu = @nes.ppu
+    
+    loadPixels
+    ppu.screen_buffer.each_index { |scanline_index|
+      if (scanline_index != 0) # Scanline 1 in the ppu is a dummy scanline (nothing drawn)
+        scanline = ppu.screen_buffer[scanline_index]
+        scanline.each_index { |pixel_index|
+          pixel = COLORS[scanline[pixel_index]]
+          
+          pixels[((scanline_index - 1) * 256) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) # 
+        }
+      end
+    }
+    updatePixels
   end
 
 end

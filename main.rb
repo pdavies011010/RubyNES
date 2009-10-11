@@ -27,6 +27,7 @@ class Main < Processing::App
   
 
   def setup
+    @title = "Ruby NES"
     rom_file = ARGV[0]
     
     size 256, 241, P2D

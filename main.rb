@@ -34,28 +34,28 @@ class Main < Processing::App
     
     # Set up the menu bar
     @menu_bar = JMenuBar.new
-    @frame.setJMenuBar(@menu_bar)
+    @frame.setJMenuBar @menu_bar
     
-    @file_menu = JMenu.new("File")
-    @load_item = JMenuItem.new("Load ROM"); @file_menu.add(@load_item)
-    @power_on_item = JMenuItem.new("Power On"); @file_menu.add(@power_on_item)
-    @exit_item = JMenuItem.new("Exit"); @file_menu.add(@exit_item)
-    @menu_bar.add(@file_menu)
+    @file_menu = JMenu.new "File"
+    @load_item = JMenuItem.new "Load ROM"; @file_menu.add @load_item
+    @power_on_item = JMenuItem.new "Power On"; @file_menu.add @power_on_item
+    @exit_item = JMenuItem.new "Exit"; @file_menu.add @exit_item
+    @menu_bar.add @file_menu
     
-    @options_menu = JMenu.new("Options")
-    @show_pattern_tables_item = JMenuItem.new("Show Pattern Tables"); @options_menu.add(@show_pattern_tables_item)
-    @debug_item = JCheckBoxMenuItem.new("Debug?"); @options_menu.add(@debug_item)
-    @menu_bar.add(@options_menu)
+    @options_menu = JMenu.new "Options"
+    @show_pattern_tables_item = JMenuItem.new "Show Pattern Tables"; @options_menu.add @show_pattern_tables_item
+    @debug_item = JCheckBoxMenuItem.new "Debug?"; @options_menu.add @debug_item
+    @menu_bar.add @options_menu
     
     
     # Now initialize the actual NES emulator
-    @nes = NES.new()
+    @nes = NES.new
     
     @nes.load_rom rom_file if rom_file != nil and not rom_file.empty?
     @frame.setTitle "Ruby NES (#{rom_file})"
     
     # 1/30 of a second, NTSC refresh rate.
-    frameRate(30)
+    frameRate 30
     
     @nes.power_on
     

@@ -20,6 +20,7 @@ class NES
     super()
     
     @rom_file = nil
+    @powered_on = false
     
     # Add debug commands
     DEBUG.debug_addcommand "loadrom", Proc.new {|rom_file_path| load_rom rom_file_path }
@@ -84,6 +85,8 @@ class NES
     
     # Get debug commands if debugging is enabled
     DEBUG.debug_getcommands
+    
+    @powered_on = true
   end
   
   def run_one_frame
@@ -105,6 +108,10 @@ class NES
     # @TODO: Define buttons
     # This method receives an array of which controller buttons are pressed.
     # Should probably be updated every frame
+  end
+  
+  def is_power_on?
+    return @powered_on
   end
   
 end

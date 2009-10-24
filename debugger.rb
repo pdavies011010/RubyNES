@@ -71,4 +71,8 @@ class Debugger
   def disable_debugging
     @debugging = false
   end
+
+  def is_debugging?
+    return @debugging
+  end
 end

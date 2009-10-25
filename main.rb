@@ -24,7 +24,7 @@ class Main < Processing::App
   CANVAS_X=100
   CANVAS_Y=0
   CANVAS_W=256
-  CANVAS_H=240
+  CANVAS_H=241
 
   # Buttons
   BTN_PANEL_W=100
@@ -97,7 +97,7 @@ class Main < Processing::App
   def draw
     if @nes.is_power_on?
       @nes.run_one_frame
-    
+
       repaint
     end
   end
@@ -105,19 +105,21 @@ class Main < Processing::App
   def repaint
     ppu = @nes.ppu
 
-    # I think the preferred method to do this is using an image buffer, see how in the ruby-processing samples
-    loadPixels
+    img = createImage(CANVAS_W, CANVAS_H, RGB)
+    img.loadPixels
     ppu.screen_buffer.each_index { |scanline_index|
       if (scanline_index != 0) # Scanline 1 in the ppu is a dummy scanline (nothing drawn)
         scanline = ppu.screen_buffer[scanline_index]
         scanline.each_index { |pixel_index|
           pixel = COLORS[scanline[pixel_index]]
-          
-          pixels[(((scanline_index - 1) * 256) + CANVAS_X) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) # 
+
+          img.pixels[((scanline_index - 1) * 256) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) #
         }
       end
     }
-    updatePixels
+    img.updatePixels
+
+    image img,CANVAS_X, CANVAS_Y, CANVAS_W, CANVAS_H
   end
 
   def mousePressed

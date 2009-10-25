@@ -113,7 +113,7 @@ class Main < Processing::App
         scanline.each_index { |pixel_index|
           pixel = COLORS[scanline[pixel_index]]
           
-          pixels[((scanline_index - 1) * 256) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) # 
+          pixels[(((scanline_index - 1) * 256) + CANVAS_X) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) # 
         }
       end
     }
@@ -136,15 +136,17 @@ class Main < Processing::App
 
     c = JFileChooser.new
 
-    rVal = c.showOpenDialog(MAIN.frame)
-    if (rVal == JFileChooser::APPROVE_OPTION)
-      rom_file = c.getSelectedFile # Returns a Java File
-      file = rom_file.getAbsolutePath
-      if file != nil and not file.empty?
-        MAIN.frame.setTitle "RubyNES (#{rom_file.getName})"
-        MAIN.nes.load_rom file
+    Thread.new {
+      rVal = c.showOpenDialog(MAIN.frame)
+      if (rVal == JFileChooser::APPROVE_OPTION)
+        rom_file = c.getSelectedFile # Returns a Java File
+        file = rom_file.getAbsolutePath
+        if file != nil and not file.empty?
+          MAIN.frame.setTitle "RubyNES (#{rom_file.getName})"
+          MAIN.nes.load_rom file
+        end
       end
-    end
+    }
 
   end
 
@@ -153,11 +155,13 @@ class Main < Processing::App
     return unless (PWR_BTN_Y..(PWR_BTN_Y + PWR_BTN_H)).include? y
 
     MAIN.nes.power_on if MAIN.nes.rom_file_path != nil and not MAIN.nes.rom_file_path.empty?
+    update_titlebar_status "Running"
   end
 
   def reset_button_handler(x, y)
     return unless (RESET_BTN_X..(RESET_BTN_X + RESET_BTN_W)).include? x
     return unless (RESET_BTN_Y..(RESET_BTN_Y + RESET_BTN_H)).include? y
+    update_titlebar_status "Running"
 
     MAIN.nes.cpu.reset
   end
@@ -175,6 +179,10 @@ class Main < Processing::App
       debug = loadImage DEBUG_BTN_UNCHECKED_IMG
       image debug, DEBUG_BTN_X, DEBUG_BTN_Y, DEBUG_BTN_W, DEBUG_BTN_H
     end
+  end
+  
+  def update_titlebar_status(status)
+    MAIN.frame.setTitle(MAIN.frame.getTitle.split(" - ")[0] + " - " + status)
   end
 
 end

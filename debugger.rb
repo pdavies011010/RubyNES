@@ -1,7 +1,8 @@
 require "logger"
 
 class Debugger
-  attr_accessor :debugging
+  attr_accessor :debugging, :io_reader
+
   
   def initialize(debugging)
     @debugging = debugging
@@ -32,13 +33,17 @@ class Debugger
   def debug_getcommand
     result = false # Variable indicating whether a command was received
     
-    if (@debugging)
+    if (@debugging) 
+      # Eliminate any pre-existing input
+      @io_reader.flush
+
       print "\nCommand>> "
-      command = STDIN.gets.chop
+      command = @io_reader.gets.chop
+      
       if command == "?"
         print "Commands: #{@commands.keys.sort.join(', ')}\n"
         result = true
-      elsif (command != nil and command != "")
+      elsif not command.nil? and not command.empty?
         debug_execcommand(command.split[0].downcase, command.split[1])
         result = true
       end

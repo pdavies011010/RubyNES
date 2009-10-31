@@ -5,6 +5,7 @@ require "nes"
 require "debugger"
 require "palette"
 require "constants"
+require "socket"
 
 include_class "javax.swing.JFrame"
 include_class "javax.swing.JFileChooser"
@@ -78,27 +79,50 @@ class Main < Processing::App
     reset = loadImage RESET_BTN_IMG
     image reset, RESET_BTN_X, RESET_BTN_Y, RESET_BTN_W, RESET_BTN_H
 
-    debug = loadImage DEBUG_BTN_UNCHECKED_IMG
+    debug = loadImage DEBUG.is_debugging? ? DEBUG_BTN_CHECKED_IMG : DEBUG_BTN_UNCHECKED_IMG
     image debug, DEBUG_BTN_X, DEBUG_BTN_Y, DEBUG_BTN_W, DEBUG_BTN_H
 
-    debug_font = createFont "Arial", DEBUG_LABEL_SIZE
+    #fontList = PFont.list
+    #fontList.each {|font| STDOUT.puts "\n" + font}
+
+    debug_font = createFont "Monospaced.bold", DEBUG_LABEL_SIZE
     fill 0, 0, 0
     textFont debug_font
     text "Debug? ", DEBUG_LABEL_X, DEBUG_LABEL_Y
     
     # Now initialize the actual NES emulator
     @nes = NES.new
-    
-    # 1/30 of a second, NTSC refresh rate.
+
+    # NTSC refresh rate = 1/30 of a second
     frameRate 30
+
+    # Doesn't actually synchronize the screen refresh with the CPU at the moment
+    # because it's too slow. This just tells the screen repaint to occur only if
+    # the cpu is done renedering a frame. This might cause screen flicker, etc.
+    @frame_updated = false
+
+    cpu_thread = Thread.new {
+      # Since we have a non-blocking thread here, let's set up the receiving socket for our debugger
+      server = TCPServer.new("localhost", 6502)
+      socket = server.accept
+      DEBUG.io_reader = socket
+
+      while true do
+        if @nes.is_power_on?
+          @nes.run_one_frame
+          @frame_updated = true
+        end
+      end
+    }
+
+    @debug_writer = TCPSocket.new( "localhost", 6502 )
     
   end
   
   def draw
-    if @nes.is_power_on?
-      @nes.run_one_frame
-
+    if @frame_updated
       repaint
+      @frame_updated = false
     end
   end
   
@@ -132,6 +156,20 @@ class Main < Processing::App
     debug_button_handler x, y
   end
 
+  def keyPressed
+    @debug_buffer = "" if @debug_buffer.nil?
+
+    if (key.respond_to? :chop)
+      DEBUG.debug_print key
+      @debug_buffer << key
+    end
+
+    if (key == "\n")
+      @debug_writer.puts @debug_buffer
+      @debug_buffer = ""
+    end
+  end
+
   def load_button_handler(x, y)
     return unless (LOAD_BTN_X..(LOAD_BTN_X + LOAD_BTN_W)).include? x
     return unless (LOAD_BTN_Y..(LOAD_BTN_Y + LOAD_BTN_H)).include? y
@@ -156,7 +194,9 @@ class Main < Processing::App
     return unless (PWR_BTN_X..(PWR_BTN_X + PWR_BTN_W)).include? x
     return unless (PWR_BTN_Y..(PWR_BTN_Y + PWR_BTN_H)).include? y
 
-    MAIN.nes.power_on if MAIN.nes.rom_file_path != nil and not MAIN.nes.rom_file_path.empty?
+    Thread.new {
+      MAIN.nes.power_on if MAIN.nes.rom_file_path != nil and not MAIN.nes.rom_file_path.empty?
+    }
     update_titlebar_status "Running"
   end
 
@@ -165,7 +205,9 @@ class Main < Processing::App
     return unless (RESET_BTN_Y..(RESET_BTN_Y + RESET_BTN_H)).include? y
     update_titlebar_status "Running"
 
-    MAIN.nes.cpu.reset
+    Thread.new {
+      MAIN.nes.cpu.reset
+    }
   end
 
   def debug_button_handler(x, y)

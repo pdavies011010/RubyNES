@@ -125,10 +125,10 @@ class PPU
           if (scanline_cycle < 8)
             if (not image_mask_flag_set?)
               # Draw left 8 pixels of screen...
-              @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_cpu_mem(IMAGE_PALETTE_LO + palette_index)
+              @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
             end
           else
-            @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_cpu_mem(IMAGE_PALETTE_LO + palette_index)
+            @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
           end
         end
         

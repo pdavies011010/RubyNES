@@ -7,7 +7,6 @@ require "palette"
 require "constants"
 require "socket"
 
-include_class "javax.swing.JFrame"
 include_class "javax.swing.JFileChooser"
 include_class "java.lang.System"
 
@@ -174,7 +173,7 @@ class Main < Processing::App
     return unless (LOAD_BTN_X..(LOAD_BTN_X + LOAD_BTN_W)).include? x
     return unless (LOAD_BTN_Y..(LOAD_BTN_Y + LOAD_BTN_H)).include? y
 
-    c = JFileChooser.new
+    c = JFileChooser.new(java.io.File.new(Dir.pwd))
 
     Thread.new {
       rVal = c.showOpenDialog(MAIN.frame)

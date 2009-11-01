@@ -19,7 +19,7 @@ class CPU
     
     # Initalize cpu here
     @mmc = mmc
-    @sp = 0  # CPU is not responsible for initializing the stack pointer
+    @sp = 0 # CPU is not responsible for initializing the stack
     @pc = (@mmc.read_cpu_mem(RESET_HI) << 8) + @mmc.read_cpu_mem(RESET_LO) # Start PC at reset vector
     
     #Initialize registers
@@ -383,8 +383,7 @@ class CPU
       @pc = address
       
       when Operation::JSR  #JSR
-      # Note: I do this differently from the documentation, and how VICE does, but I think it's right
-      @pc += BYTE_COUNTS[operation][addressing_mode]
+      @pc += 2
       push((@pc >> 8) & 0xFF) # Push high byte first
       push(@pc & 0xFF)
       @pc = address
@@ -512,10 +511,9 @@ class CPU
       @pc = data
       
       when Operation::RTS  #RTS
-      # Note: I do this differently from the documentation, and how VICE does, but I think it's right
       data = (pop & 0xFF)  # Pop low byte first
       data |= (pop << 8)  
-      @pc = data
+      @pc = data + 1
       
       when Operation::SBC  #SBC
       data = get_instruction_data(operation, addressing_mode)
@@ -612,9 +610,9 @@ class CPU
   
   # Stack Operations
   def push(val)
-    if (@sp < CPU_STACK_HI)
-      @sp+=1
-      @mmc.write_cpu_mem(@sp, val)
+    if (@sp > 0)
+      @mmc.write_cpu_mem(CPU_STACK_LO + @sp, val)
+      @sp-=1
     else
       # Error occurred, stack overflow
       DEBUG.debug_print "Stack Overflow Occurred\n"
@@ -624,9 +622,9 @@ class CPU
   end
   
   def pop
-    if (@sp >= CPU_STACK_LO)
-      result = @mmc.read_cpu_mem(@sp)
-      @sp-=1
+    if (@sp < 0xFF)
+      @sp+=1
+      result = @mmc.read_cpu_mem(CPU_STACK_LO + @sp)
     else
       # Error occurred, stack underflow
       DEBUG.debug_print "Stack Underflow Occurred\n"

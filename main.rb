@@ -64,8 +64,7 @@ class Main < Processing::App
   BOTTOM_PANEL_Y=241
   BOTTOM_PANEL_W=256
   BOTTOM_PANEL_H=59
-
-
+  
   DEBUG_LABEL="Debug?"
   DEBUG_LABEL_X=5
   DEBUG_LABEL_Y=215
@@ -174,26 +173,14 @@ class Main < Processing::App
     # Now initialize the actual NES emulator
     @nes = NES.new
 
-    # NTSC refresh rate = 1/30 of a second
+    # NTSC refresh rate (Should Be) 1/30 of a second
     frameRate 30
-
-    # Doesn't actually synchronize the screen refresh with the CPU at the moment
-    # because it's too slow. This just tells the screen repaint to occur only if
-    # the cpu is done renedering a frame. This might cause screen flicker, etc.
-    @frame_updated = false
 
     cpu_thread = Thread.new {
       # Since we have a non-blocking thread here, let's set up the receiving socket for our debugger
       server = TCPServer.new("localhost", 6502)
       socket = server.accept
       DEBUG.io_reader = socket
-
-      while true do
-        if @nes.is_power_on? and not @paused
-          @nes.run_one_frame
-          @frame_updated = true
-        end
-      end
     }
 
     @debug_writer = TCPSocket.new( "localhost", 6502 )
@@ -216,14 +203,16 @@ class Main < Processing::App
       @pattern_table_viewer.repaint(pt_img)
       image pt_img, PATTERN_TABLE_VIEWER_X, PATTERN_TABLE_VIEWER_Y, PATTERN_TABLE_VIEWER_W, PATTERN_TABLE_VIEWER_H
       
-    elsif @frame_updated
-      repaint
-      @frame_updated = false
+    else
+      if @nes.is_power_on? and not @paused
+        @nes.run_one_frame
+        repaint
 
-      if @palette_viewer_shown
-        pal_img = createImage(PALETTE_VIEWER_W, PALETTE_VIEWER_H, RGB)
-        @palette_viewer.repaint(pal_img)
-        image pal_img, PALETTE_VIEWER_X, PALETTE_VIEWER_Y, PALETTE_VIEWER_W, PALETTE_VIEWER_H
+        if @palette_viewer_shown
+          pal_img = createImage(PALETTE_VIEWER_W, PALETTE_VIEWER_H, RGB)
+          @palette_viewer.repaint(pal_img)
+          image pal_img, PALETTE_VIEWER_X, PALETTE_VIEWER_Y, PALETTE_VIEWER_W, PALETTE_VIEWER_H
+        end
       end
     end
   end
@@ -238,7 +227,6 @@ class Main < Processing::App
         scanline = ppu.screen_buffer[scanline_index]
         scanline.each_index { |pixel_index|
           pixel = COLORS[scanline[pixel_index]]
-
           img.pixels[((scanline_index - 1) * 256) + pixel_index] = color(((pixel & 0xFF0000) >> 16), ((pixel & 0xFF00) >> 8), (pixel & 0xFF)) #
         }
       end

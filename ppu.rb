@@ -53,7 +53,7 @@ class PPU
   
   def pre_frame
     # Fill the screen with the background color
-    fill_screen_with_background_color
+    #fill_screen_with_background_color
 
     # Clear Sprite #0 hit flag
     set_hit_flag(false)

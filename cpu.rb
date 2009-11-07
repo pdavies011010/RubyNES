@@ -19,7 +19,7 @@ class CPU
     
     # Initalize cpu here
     @mmc = mmc
-    @sp = 0 # CPU is not responsible for initializing the stack
+    @sp = 0xFF # CPU is not responsible for initializing the stack
     @pc = (@mmc.read_cpu_mem(RESET_HI) << 8) + @mmc.read_cpu_mem(RESET_LO) # Start PC at reset vector
     
     #Initialize registers

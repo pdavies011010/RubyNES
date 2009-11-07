@@ -26,6 +26,9 @@ class MMC
     @cartridge_ram = Array.new(CARTRIDGE_RAM_SIZE, 0) # 8kB cartridge ram, fill with 0
     @cartridge_bank_low = Array.new(CARTRIDGE_BANK_SIZE, 0) # 16kB cartridge low bank, fill with 0
     @cartridge_bank_high = Array.new(CARTRIDGE_BANK_SIZE, 0) # 16kB cartridge high bank, fill with 0
+
+    @pattern_table_0_writable = true
+    @pattern_table_1_writable = true
     
     @pattern_table_0 = Array.new(PATTERN_TABLE_SIZE, 0) # 4kB pattern table
     @pattern_table_1 = Array.new(PATTERN_TABLE_SIZE, 0) # 4kB pattern table
@@ -325,9 +328,9 @@ class MMC
   
   def write_ppu_mem(address, value)
     if (address >= PATTERN_TABLE_0_LO and address <= PATTERN_TABLE_0_HI)
-      @pattern_table_0[address] = value
+      @pattern_table_0[address] = value if pattern_table_0_writable?
     elsif (address >= PATTERN_TABLE_1_LO and address <= PATTERN_TABLE_1_HI)
-      @pattern_table_1[address - PATTERN_TABLE_1_LO] = value
+      @pattern_table_1[address - PATTERN_TABLE_1_LO] = value if pattern_table_1_writable?
     elsif (address >= NAME_TABLE_0_LO and address <= NAME_TABLE_0_HI)
       @name_table_0[address - NAME_TABLE_0_LO] = value
     elsif (address >= ATTRIBUTE_TABLE_0_LO and address <= ATTRIBUTE_TABLE_0_HI)
@@ -349,6 +352,22 @@ class MMC
     elsif (address >= SPRITE_PALETTE_LO and address <= SPRITE_PALETTE_HI)
       @sprite_palette[address - SPRITE_PALETTE_LO] = value
     end
+  end
+
+  def pattern_table_0_writable?
+    return @pattern_table_0_writable
+  end
+
+  def set_pattern_table_0_writable(val)
+    @pattern_table_0_writable = val
+  end
+
+  def pattern_table_1_writable?
+    return @pattern_table_1_writable
+  end
+
+  def set_pattern_table_1_writable(val)
+    @pattern_table_1_writable = val
   end
   
 end

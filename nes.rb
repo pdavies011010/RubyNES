@@ -78,6 +78,8 @@ class NES
       #Mapper 0 games should always have 1 8Kb CHR-ROM page to map into the pattern tables
       @mmc.pattern_table_0 = NESHelper.split_array(@rom_file.chr_rom_pages[0])[0]
       @mmc.pattern_table_1 = NESHelper.split_array(@rom_file.chr_rom_pages[0])[1]
+      @mmc.set_pattern_table_0_writable(false)
+      @mmc.set_pattern_table_1_writable(false)
     end
     
     # Reset CPU

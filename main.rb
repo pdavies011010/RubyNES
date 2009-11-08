@@ -250,8 +250,32 @@ class Main < Processing::App
 
   def keyPressed
     @debug_buffer = "" if @debug_buffer.nil?
+    mmc = @nes.mmc
 
-    if (key.respond_to? :chop)
+    # @TODO: Put in handling for second joystick
+    if (["A","S","Z","X"].include?(key))
+      case key
+      when "A"
+        mmc.joystick_1_keys |= JOYSTICK_B
+      when "S"
+        mmc.joystick_1_keys |= JOYSTICK_A
+      when "Z"
+        mmc.joystick_1_keys |= JOYSTICK_SELECT
+      when "X"
+        mmc.joystick_1_keys |= JOYSTICK_START
+      end
+    elsif (key == CODED)
+      case keyCode
+      when UP
+        mmc.joystick_1_keys |= JOYSTICK_UP
+      when DOWN
+        mmc.joystick_1_keys |= JOYSTICK_DOWN
+      when LEFT
+        mmc.joystick_1_keys |= JOYSTICK_LEFT
+      when RIGHT
+        mmc.joystick_1_keys |= JOYSTICK_RIGHT
+      end
+    elsif (key.respond_to? :chop)
       DEBUG.debug_print key
       @debug_buffer << key
     end

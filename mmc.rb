@@ -8,6 +8,7 @@ class MMC
   attr_accessor :name_table_1, :attr_table_1, :name_table_2, :attr_table_2
   attr_accessor :name_table_3, :attr_table_3, :image_palette, :sprite_palette
   attr_accessor :sprite_mem
+  attr_accessor :joystick_1_keys, :joystick_2_keys
   
   # The MMC needs access to the PPU so it can get / set the value of PPU registers
   attr_accessor :ppu
@@ -47,6 +48,13 @@ class MMC
     # Initialize these two toggle switches that affect the way certain PPU ports work
     @screen_scroll_reg_switch = false
     @ppu_mem_address_reg_switch = false
+
+    # Initialize the toggle switch that deals with joystick latching
+    @joystick_latch_started = false
+    @joystick_1_keys = 0
+    @joystick_2_keys = 0
+    @joystick_1_latch_keys = 0
+    @joystick_2_latch_keys = 0
     
     # Add debug commands
     DEBUG.debug_addcommand "getcpumem", Proc.new {|address| DEBUG.debug_print(DEBUG.num2hex(read_cpu_mem(address.hex)) + "\n")}
@@ -149,7 +157,14 @@ class MMC
           else
             @ppu.ppu_mem_addr+=1
           end
-       end
+        when JOYSTICK_1_PORT
+          DEBUG.debug_print "\nLatched Key: #{@joystick_1_latch_keys & 0x01}"
+          result = 0x40 | (@joystick_1_latch_keys & 0x01)
+          @joystick_1_latch_keys >>= 1
+        when JOYSTICK_2_PORT
+          result = 0x40 | (@joystick_2_latch_keys & 0x01)
+          @joystick_2_latch_keys >>= 1
+      end
       
     elsif (address >= EXPANSION_MODULES_LO and address <= EXPANSION_MODULES_HI)
       # Read from expansion modules
@@ -277,6 +292,17 @@ class MMC
           (start_address...end_address).each {|address|
             @sprite_mem[address - start_address] = read_cpu_mem(address)
           }
+
+        when JOYSTICK_1_PORT
+          if (value == 1)
+            @joystick_latch_started = true
+          elsif (value == 0 and @joystick_latch_started)
+            @joystick_latch_started = false
+            @joystick_1_latch_keys = 0 | @joystick_1_keys
+            @joystick_2_latch_keys = 0 | @joystick_2_keys
+            @joystick_1_keys = 0
+            @joystick_2_keys = 0
+          end
        end
       
     elsif (address >= EXPANSION_MODULES_LO and address <= EXPANSION_MODULES_HI)

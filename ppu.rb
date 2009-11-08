@@ -63,9 +63,8 @@ class PPU
     # Raise the VBlank flag, NMI will be triggered
     set_vblank_flag(true)
     
-    DEBUG.debug_print "VBLANK Hit.\n"
-    DEBUG.debug_log "VBLANK Hit.\n" if @log_ppu_state 
-
+    #DEBUG.debug_print "VBLANK Hit.\n"
+    DEBUG.debug_log "VBLANK Hit.\n" if @log_ppu_state
     #DEBUG.debug_getcommands
 
     @mmc.cpu.nmi if vblank_enable_flag_set? # Force CPU Non-maskable Interrupt
@@ -126,13 +125,13 @@ class PPU
 
         end
 
-        palette_index = 0
-        palette_index |= ((@pattern_table_byte1 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE1_BIT_SHIFT[tile_pixel])
-        palette_index |= ((@pattern_table_byte2 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE2_BIT_SHIFT[tile_pixel])
-        palette_index |= ((@attribute_table_byte & ATTRIBUTE_TABLE_BIT_MASK[@attribute_table_square]) >> ATTRIBUTE_TABLE_BIT_SHIFT[@attribute_table_square])
-
         # Draw screen
+        palette_index = 0
         if screen_enable_flag_set?
+          palette_index |= ((@pattern_table_byte1 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE1_BIT_SHIFT[tile_pixel])
+          palette_index |= ((@pattern_table_byte2 & PATTERN_TABLE_BIT_MASK[tile_pixel]) >> PATTERN_TABLE_BYTE2_BIT_SHIFT[tile_pixel])
+          palette_index |= ((@attribute_table_byte & ATTRIBUTE_TABLE_BIT_MASK[@attribute_table_square]) >> ATTRIBUTE_TABLE_BIT_SHIFT[@attribute_table_square])
+
           if (scanline_cycle < 8)
             if not image_mask_flag_set?
               # Draw left 8 pixels of screen...
@@ -173,8 +172,6 @@ class PPU
               end
             end
           end
-
-          
           
         end
         

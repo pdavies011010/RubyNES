@@ -101,8 +101,8 @@ class CPU
     
     @pc = (@mmc.read_cpu_mem(NMIB_HI) << 8) | @mmc.read_cpu_mem(NMIB_LO)
     
-    DEBUG.debug_print "NMI.\n"
-    DEBUG.debug_log "NMI.\n" if (@log_cpu_state)
+    #DEBUG.debug_print "NMI.\n"
+    #DEBUG.debug_log "NMI.\n" if (@log_cpu_state)
   end
   
   def execute

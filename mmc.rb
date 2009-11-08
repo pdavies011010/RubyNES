@@ -158,7 +158,7 @@ class MMC
             @ppu.ppu_mem_addr+=1
           end
         when JOYSTICK_1_PORT
-          DEBUG.debug_print "\nLatched Key: #{@joystick_1_latch_keys & 0x01}"
+          #DEBUG.debug_print "\nLatched Key: #{@joystick_1_latch_keys & 0x01}"
           result = 0x40 | (@joystick_1_latch_keys & 0x01)
           @joystick_1_latch_keys >>= 1
         when JOYSTICK_2_PORT
@@ -277,7 +277,7 @@ class MMC
           
         when PPU_MEM_DATA_PORT
           write_ppu_mem(@ppu.ppu_mem_addr, value)
-          #DEBUG.debug_print "\nWriting #{DEBUG.num2hex(value)} to PPU address #{DEBUG.num2hex(@ppu.ppu_mem_addr)}"
+          DEBUG.debug_print "\nWriting #{DEBUG.num2hex(value)} to PPU address #{DEBUG.num2hex(@ppu.ppu_mem_addr)}"
           if (@ppu.vertical_rw_flag_set?)
             @ppu.ppu_mem_addr+=32
           else

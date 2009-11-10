@@ -90,11 +90,12 @@ class PPU
 
         if (tile_pixel == 0)
           # Read Name Table byte, Attribute Table byte and 2 Pattern Table bytes
-          @tile_index = get_tile_index(@scanline, scanline_cycle)
+          true_scanline = @scanline - 20
+          @tile_index = get_tile_index(true_scanline, scanline_cycle)
           @name_table_address = get_name_table_address
           @pattern_table_index = @mmc.read_ppu_mem(@name_table_address + @tile_index) # From Name Table
-          @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, @scanline))
-          @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, @scanline))
+          @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, true_scanline))
+          @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, true_scanline))
           @attribute_table_index = get_attribute_table_index(@tile_index)
           @attribute_table_byte = @mmc.read_ppu_mem(@name_table_address + NAME_TABLE_SIZE + @attribute_table_index)
         end
@@ -103,14 +104,15 @@ class PPU
         
       elsif @scanline < 261
         # Ordinary rendering for scanline 21 thru 260
+        true_scanline = @scanline - 20
         if (tile_pixel == 0)
           # Read Name Table byte, Attribute Table byte and 2 Pattern Table bytes
           if screen_enable_flag_set?
-            @tile_index = get_tile_index(@scanline, scanline_cycle)
+            @tile_index = get_tile_index(true_scanline, scanline_cycle)
             @name_table_address = get_name_table_address
             @pattern_table_index = @mmc.read_ppu_mem(@name_table_address + @tile_index) # From Name Table
-            @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, @scanline))
-            @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, @scanline))
+            @pattern_table_byte1 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte1_index(@pattern_table_index, true_scanline))
+            @pattern_table_byte2 = @mmc.read_ppu_mem(get_screen_pattern_table_address + get_pattern_table_byte2_index(@pattern_table_index, true_scanline))
             @attribute_table_index = get_attribute_table_index(@tile_index)
             @attribute_table_byte = @mmc.read_ppu_mem(@name_table_address + NAME_TABLE_SIZE + @attribute_table_index)
             @attribute_table_square = get_attribute_table_square(@tile_index)
@@ -118,7 +120,7 @@ class PPU
 
           # Get sprites for this tile
           if sprite_enable_flag_set?
-            @applicable_sprites = get_applicable_sprites(@scanline, scanline_cycle, sprite_size_flag_set?)
+            @applicable_sprites = get_applicable_sprites(true_scanline, scanline_cycle, sprite_size_flag_set?)
           else
             @applicable_sprites = nil
           end
@@ -135,10 +137,10 @@ class PPU
           if (scanline_cycle < 8)
             if not image_mask_flag_set?
               # Draw left 8 pixels of screen...
-              @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
+              @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
             end
           else
-            @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
+            @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(IMAGE_PALETTE_LO + palette_index)
           end
         end
 
@@ -153,8 +155,8 @@ class PPU
               @sprite_y = sprite_bytes[0] + 1
               @sprite_flags = sprite_bytes[2]
               @sprite_pattern_table_index = sprite_bytes[1]
-              @sprite_pattern_table_byte1 = @mmc.read_ppu_mem(get_sprite_pattern_table_address + get_pattern_table_byte1_index(@sprite_pattern_table_index, scanline - @sprite_y))
-              @sprite_pattern_table_byte2 = @mmc.read_ppu_mem(get_sprite_pattern_table_address + get_pattern_table_byte2_index(@sprite_pattern_table_index, scanline - @sprite_y))
+              @sprite_pattern_table_byte1 = @mmc.read_ppu_mem(get_sprite_pattern_table_address + get_pattern_table_byte1_index(@sprite_pattern_table_index, true_scanline - @sprite_y))
+              @sprite_pattern_table_byte2 = @mmc.read_ppu_mem(get_sprite_pattern_table_address + get_pattern_table_byte2_index(@sprite_pattern_table_index, true_scanline - @sprite_y))
 
               @sprite_flags = sprite_bytes[2]
               @sprite_x = sprite_bytes[3]
@@ -165,10 +167,10 @@ class PPU
 
               if scanline_cycle < 8
                 if not sprite_mask_flag_set?
-                  @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
+                  @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
                 end
               else
-                @screen_buffer[scanline - 20][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
+                @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
               end
             end
           end

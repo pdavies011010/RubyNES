@@ -1,0 +1,3 @@
+Here's a little performance tuning for jruby: 
+jruby --fast -J-Xmn512m -J-Xms1024m -J-Xmx1024m -J-server
+

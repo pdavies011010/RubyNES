@@ -28,7 +28,7 @@ class ROMFile
     begin
       fd = IO.sysopen(rom_file_path, "rb")
     rescue
-      DEBUG.debug_print "Error opening ROM file\n"
+      DEBUG.debug_print "Error opening ROM file: #{rom_file_path}\n"
       DEBUG.debug_getcommands
       raise
     end

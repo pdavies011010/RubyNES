@@ -103,7 +103,12 @@ class Main < Processing::App
   PATTERN_TABLE_VIEWER_Y=0
   PATTERN_TABLE_VIEWER_W=128
   PATTERN_TABLE_VIEWER_H=256
-  
+
+  def initialize(file)
+    super()
+    
+    @file = file
+  end
 
   def setup
     @title = "RubyNES"
@@ -173,17 +178,14 @@ class Main < Processing::App
     # Now initialize the actual NES emulator
     @nes = NES.new
 
+    # If a rom file was passed in on the command line, use it
+    if !@file.nil? and !@file.empty?
+      MAIN.frame.setTitle "RubyNES (#{@file})"
+      MAIN.nes.load_rom @file
+    end
+
     # NTSC refresh rate (Should Be) 1/30 of a second
     frameRate 30
-
-    cpu_thread = Thread.new {
-      # Since we have a non-blocking thread here, let's set up the receiving socket for our debugger
-      server = TCPServer.new("localhost", 6502)
-      socket = server.accept
-      DEBUG.io_reader = socket
-    }
-
-    @debug_writer = TCPSocket.new( "localhost", 6502 )
     
   end
 
@@ -249,12 +251,11 @@ class Main < Processing::App
   end
 
   def keyPressed
-    @debug_buffer = "" if @debug_buffer.nil?
     mmc = @nes.mmc
 
-    # @TODO: Put in handling for second joystick
-    if (["A","S","Z","X"].include?(key))
-      case key
+    # @TODO: Put in handling for second joystick, enable user key selection
+    if (key.respond_to? :chop and ["A","S","Z","X"].include?(key.upcase))
+      case key.upcase
       when "A"
         mmc.joystick_1_keys |= JOYSTICK_B
       when "S"
@@ -275,14 +276,6 @@ class Main < Processing::App
       when RIGHT
         mmc.joystick_1_keys |= JOYSTICK_RIGHT
       end
-    elsif (key.respond_to? :chop)
-      DEBUG.debug_print key
-      @debug_buffer << key
-    end
-
-    if (key == "\n")
-      @debug_writer.puts @debug_buffer
-      @debug_buffer = ""
     end
   end
 
@@ -296,10 +289,10 @@ class Main < Processing::App
       rVal = c.showOpenDialog(MAIN.frame)
       if (rVal == JFileChooser::APPROVE_OPTION)
         rom_file = c.getSelectedFile # Returns a Java File
-        file = rom_file.getAbsolutePath
-        if file != nil and not file.empty?
+        @file = rom_file.getAbsolutePath
+        if @file != nil and not @file.empty?
           MAIN.frame.setTitle "RubyNES (#{rom_file.getName})"
-          MAIN.nes.load_rom file
+          MAIN.nes.load_rom @file
         end
       end
     }

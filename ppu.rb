@@ -63,9 +63,8 @@ class PPU
     # Raise the VBlank flag, NMI will be triggered
     set_vblank_flag(true)
     
-    #DEBUG.debug_print "VBLANK Hit.\n"
-    DEBUG.debug_log "VBLANK Hit.\n" if @log_ppu_state
-    #DEBUG.debug_getcommands
+    #DEBUG.debug_print "VBLANK.\n"
+    DEBUG.debug_log "VBLANK.\n" if @log_ppu_state
 
     @mmc.cpu.nmi if vblank_enable_flag_set? # Force CPU Non-maskable Interrupt
     

@@ -1,3 +1,23 @@
-Here's a little performance tuning for jruby: 
-jruby --fast -J-Xmn512m -J-Xms1024m -J-Xmx1024m -J-server
+I’m just getting started on this project, but so far I think it’s coming along well. If you’d like to help out please message me here on GitHub (preferably before forking and making changes) so we can coordinate things.
 
+So far I have CPU emulation working and I also have a pretty decent debugger that allows for stepping, breakpoints, etc.
+
+I’ve made some progress on the PPU, however there is a some weird rendering issues with certain games (namely SMB and Donkey Kong). Rendering seems to work fairly well in ExciteBike. I have basic pattern table / palette viewers built into the frontend. 
+
+Please see the 'Issues' page to see what really needs attention.
+
+There are three versions of the main.rb file, the regular one uses the Ruby-Processing toolkit (and hence, JRuby) for display, the original used the FXRuby toolkit, but I switched off of that one because of issues running under Windows. I'll probably eliminate that one pretty soon. There is also a 'no-graphics' version that is just used to ease profiling.
+
+To run the emulator you will need the Ruby-Processing gem installed, then run ‘jruby rnes.rb’. You can turn the debugger on/off from the frontend, then load a rom and power on. With debugger on you can enter commands, which will be echoed back to the command line. Enter ‘?’ for a list of debugging commands. Use ‘step’ to step through CPU instructions, or ‘go’ to let it run. Some debugger commands take parameters, usually either one or two numeric values. Numeric values are entered as hex, eg. E000.
+
+*Note*: At the moment this emulator is hard-set to only work with Mapper #0 (aka No Mapper) games. I'm going to continue focus my work on getting these games working until I have the emulator stable, then I'll try to increase compatibility to others. As such, I'll keep a list of known Mapper #0 games here for anyone wishing to test: 
+Mario Bros.
+Super Mario Bros. (standalone version, not the version bundled with Duck Hunt)
+Donkey Kong
+ExciteBike
+Burger Time
+
+*Note*: The debugger doesn't seem to want to receive input while running under Cygwin. This should hopefully be easy to fix. 
+
+*Note*: Here's a little performance tuning for jruby: 
+jruby --fast -J-Xmn512m -J-Xms1024m -J-Xmx1024m -J-server

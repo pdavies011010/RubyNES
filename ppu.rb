@@ -165,10 +165,12 @@ class PPU
               palette_index |= ((@sprite_flags & 0x3) << 2)
 
               if scanline_cycle < 8
-                if not sprite_mask_flag_set?
+                if not sprite_mask_flag_set? and not palette_index == 0
+                  # Color #0 is transparent
                   @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
                 end
-              else
+              elsif not palette_index == 0
+                # Color #0 is transparent
                 @screen_buffer[true_scanline][scanline_cycle] = @mmc.read_ppu_mem(SPRITE_PALETTE_LO + palette_index)
               end
             end
